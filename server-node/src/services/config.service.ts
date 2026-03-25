@@ -108,7 +108,7 @@ export class ConfigService {
 
       // 读取配置文件
       const content = fs.readFileSync(this.configFile, 'utf-8');
-      const config: AppConfig = parse(content) as AppConfig;
+      const config: AppConfig = parse(content) as unknown as AppConfig;
 
       // 合并配置
       for (const [provider, providerConfig] of Object.entries(config)) {

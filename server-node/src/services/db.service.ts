@@ -24,7 +24,7 @@ const DB_PATH = path.join(USER_DATA_DIR, 'localmanus.db');
  */
 export class DatabaseService {
   private dbPath: string;
-  private db: Database.Database;
+  private db!: Database.Database;
   private migrationManager: MigrationManager;
 
   constructor() {

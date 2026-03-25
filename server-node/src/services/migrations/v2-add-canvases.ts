@@ -29,8 +29,8 @@ export class V2AddCanvases implements Migration {
     `);
 
     // 检查 canvas_id 列是否已存在
-    const columns = conn.pragma('table_info(chat_sessions)');
-    const hasCanvasId = columns.some((col: any) => col.name === 'canvas_id');
+    const columns = conn.pragma('table_info(chat_sessions)') as { name: string }[];
+    const hasCanvasId = columns.some((col) => col.name === 'canvas_id');
 
     if (!hasCanvasId) {
       // 添加 canvas_id 列到 chat_sessions

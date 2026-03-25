@@ -7,7 +7,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
-import Spinner from '@/components/ui/Spinner'
+import { Spinner } from '@/components/ui/Spinner'
 import { useConfigs } from '@/contexts/configs'
 import { useCallback, useState } from 'react'
 import { toast } from 'sonner'

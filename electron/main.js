@@ -79,8 +79,8 @@ function findAvailablePort(startPort, maxAttempts = 100) {
 }
 
 let mainWindow
-let pyProc = null
-let pyPort = null
+let backendProc = null
+let backendPort = null
 let childWindows = [] // Track all child windows
 
 // check for updates after the app is ready
@@ -121,7 +121,7 @@ autoUpdater.on('update-downloaded', (info) => {
   }
 })
 
-const createWindow = (pyPort) => {
+const createWindow = (backendPort) => {
   mainWindow = new BrowserWindow({
     width: 1200,
     height: 800,
@@ -192,7 +192,7 @@ const createWindow = (pyPort) => {
     mainWindow.webContents.openDevTools()
   } else {
     // In production, load built files
-    mainWindow.loadURL(`http://127.0.0.1:${pyPort}`, {
+    mainWindow.loadURL(`http://127.0.0.1:${backendPort}`, {
       extraHeaders: 'pragma: no-cache\n',
     })
   }
@@ -201,32 +201,31 @@ const createWindow = (pyPort) => {
 // 获取 app.asar 内部的根路径
 const appRoot = app.getAppPath()
 
-const startPythonApi = async () => {
+const startNodeApi = async () => {
   // Find an available port
-  pyPort = await findAvailablePort(57988)
-  console.log('available pyPort:', pyPort)
+  backendPort = await findAvailablePort(57988)
+  console.log('available backendPort:', backendPort)
 
-  // 在某些开发情况，我们希望 python server 独立运行，那么就不通过 electron 启动
+  // 在某些开发情况，我们希望 node server 独立运行，那么就不通过 electron 启动
   if (process.env.NODE_ENV === 'development') {
     try {
-      const response = await fetch(`http://127.0.0.1:${pyPort}`)
+      const response = await fetch(`http://127.0.0.1:${backendPort}`)
       if (response.ok) {
-        console.log('Python service already running on port:', pyPort)
-        return pyPort
+        console.log('Node.js service already running on port:', backendPort)
+        return backendPort
       }
     } catch (error) {
-      console.log('Starting Python service on port:', pyPort)
+      console.log('Starting Node.js service on port:', backendPort)
     }
   } else {
-    console.log('Starting Python service on port:', pyPort)
+    console.log('Starting Node.js service on port:', backendPort)
   }
 
   // 确定UI dist目录
   const env = {
     ...process.env,
   }
-  env.PYTHONIOENCODING = 'utf-8'
-  env.DEFAULT_PORT = pyPort // 添加端口到环境变量
+  env.DEFAULT_PORT = backendPort // 添加端口到环境变量
   if (app.isPackaged) {
     env.UI_DIST_DIR = path.join(process.resourcesPath, 'react', 'dist')
     env.USER_DATA_DIR = app.getPath('userData')
@@ -248,58 +247,75 @@ const startPythonApi = async () => {
     console.error('Failed to get proxy environment variables:', error)
   }
 
-  // Determine the Python executable path (considering packaged app)
+  // 确定 Node.js 后端目录和启动命令
   const isWindows = process.platform === 'win32'
-  const pythonExecutable = app.isPackaged
-    ? path.join(process.resourcesPath, 'server', 'dist', 'main', isWindows ? 'main.exe' : 'main')
-    : 'python'
-  console.log('Resolved Python executable:', pythonExecutable)
+  const nodeExecutable = process.execPath // 使用 Electron 自带的 Node.js
+
+  // 开发环境：从 server-node 目录启动
+  // 生产环境：从打包后的 resources/server-node 启动
+  let serverDir
+  let startScript
+
+  if (app.isPackaged) {
+    serverDir = path.join(process.resourcesPath, 'server-node')
+    startScript = path.join(serverDir, 'dist', 'index.js')
+  } else {
+    serverDir = path.join(__dirname, '../server-node')
+    startScript = path.join(serverDir, 'dist', 'index.js')
+  }
+
+  console.log('Node.js server directory:', serverDir)
+  console.log('Start script:', startScript)
+  console.log('Node executable:', nodeExecutable)
 
   const fs = require('fs')
 
-  console.log('Exists?', fs.existsSync(pythonExecutable))
+  // 检查文件是否存在
+  const scriptExists = fs.existsSync(startScript)
+  console.log('Start script exists?', scriptExists)
 
-  // fs.chmodSync(pythonExecutable, "755");
+  if (!scriptExists) {
+    console.error('Error: Node.js server not built. Please run "cd server-node && npm run build" first.')
+    throw new Error('Node.js server not built')
+  }
 
-  console.log('Python executable path:', pythonExecutable)
-  console.log('Python executable exists?', fs.existsSync(pythonExecutable))
-  console.log('env:', env)
-  const scriptPath = path.join(__dirname, '../server/main.py')
-
-  // Start the FastAPI process
-  pyProc = spawn(
-    pythonExecutable,
-    app.isPackaged ? [`--port`, pyPort] : [scriptPath, `--port`, pyPort],
-    { env: env }
+  // Start the Node.js process
+  backendProc = spawn(
+    nodeExecutable,
+    [startScript],
+    {
+      env: env,
+      cwd: serverDir
+    }
   )
 
   // Log output to logStream (shared with console.log)
-  pyProc.stdout.on('data', (data) => {
-    const log = `[${new Date().toISOString()}][PYTHON stdout] ${data}`
+  backendProc.stdout.on('data', (data) => {
+    const log = `[${new Date().toISOString()}][NODE stdout] ${data}`
     logStream.write(log)
     process.stdout.write(log) // optional: echo to terminal if running from CLI
   })
 
-  pyProc.stderr.on('data', (data) => {
-    const log = `[${new Date().toISOString()}][PYTHON stderr] ${data}`
+  backendProc.stderr.on('data', (data) => {
+    const log = `[${new Date().toISOString()}][NODE stderr] ${data}`
     logStream.write(log)
     process.stderr.write(log) // optional: echo to terminal if running from CLI
   })
 
   // Optional: log if spawn fails
-  pyProc.on('error', (err) => {
-    const log = `[${new Date().toISOString()}][PYTHON spawn error] ${err.toString()}\n`
+  backendProc.on('error', (err) => {
+    const log = `[${new Date().toISOString()}][NODE spawn error] ${err.toString()}\n`
     logStream.write(log)
     process.stderr.write(log)
   })
 
   // Optional: log process exit
-  pyProc.on('exit', (code, signal) => {
-    const log = `[${new Date().toISOString()}][PYTHON exited] code=${code}, signal=${signal}\n`
+  backendProc.on('exit', (code, signal) => {
+    const log = `[${new Date().toISOString()}][NODE exited] code=${code}, signal=${signal}\n`
     logStream.write(log)
   })
 
-  return pyPort
+  return backendPort
 }
 
 // Add these handlers before app.whenReady()
@@ -381,13 +397,13 @@ if (!gotTheLock) {
       }, 3000)
     }
 
-    // Start Python API in both development and production
-    const pyPort = await startPythonApi()
+    // Start Node.js API in both development and production
+    const backendPort = await startNodeApi()
 
     while (true) {
       await new Promise((resolve) => setTimeout(resolve, 1000))
       // wait for the server to start
-      let status = await fetch(`http://127.0.0.1:${pyPort}`)
+      let status = await fetch(`http://127.0.0.1:${backendPort}`)
         .then((res) => {
           return res.ok
         })
@@ -400,11 +416,11 @@ if (!gotTheLock) {
       }
     }
 
-    createWindow(pyPort)
+    createWindow(backendPort)
   })
 }
 
-// Quit the app and clean up the Python process
+// Quit the app and clean up the Node.js process
 app.on('will-quit', async (event) => {
   event.preventDefault()
 
@@ -416,10 +432,10 @@ app.on('will-quit', async (event) => {
     console.error('Failed to clear cache:', error)
   }
 
-  // kill python process
-  if (pyProc) {
-    pyProc.kill()
-    pyProc = null
+  // kill node.js process
+  if (backendProc) {
+    backendProc.kill()
+    backendProc = null
   }
 
   app.exit()

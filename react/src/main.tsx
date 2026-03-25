@@ -1,4 +1,5 @@
 import { SocketProvider } from '@/contexts/socket'
+import { TooltipProvider } from '@/components/ui/tooltip'
 import { StrictMode } from 'react'
 import ReactDOM from 'react-dom/client'
 import App from './App'
@@ -16,7 +17,9 @@ if (!rootElement.innerHTML) {
     <StrictMode>
       <PostHogProvider apiKey={import.meta.env.VITE_PUBLIC_POSTHOG_KEY} options={options}>
         <SocketProvider>
-          <App />
+          <TooltipProvider>
+            <App />
+          </TooltipProvider>
         </SocketProvider>
       </PostHogProvider>
     </StrictMode>

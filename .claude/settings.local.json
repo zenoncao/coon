@@ -1,0 +1,18 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm run:*)",
+      "Bash(pnpm dlx:*)",
+      "Bash(yes)",
+      "Bash(printf \"y\\\\ny\\\\n\")",
+      "Bash(pnpm install:*)",
+      "Bash(printf \"\\\\ny\\\\n\")",
+      "Bash(printf '\\\\n y\\\\n')",
+      "Bash(pnpm add:*)",
+      "Bash(npx shadcn@latest --version)",
+      "Bash(npm list:*)",
+      "Bash(npx shadcn@latest add --help)",
+      "Bash(npx:*)"
+    ]
+  }
+}

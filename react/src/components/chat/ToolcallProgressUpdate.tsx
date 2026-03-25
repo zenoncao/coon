@@ -3,7 +3,7 @@ import { eventBus } from '@/lib/event'
 import { TEvents } from '@/lib/event'
 import { useEffect } from 'react'
 
-import Spinner from '@/components/ui/Spinner'
+import { Spinner } from '@/components/ui/Spinner'
 import { useState } from 'react'
 
 export default function ToolcallProgressUpdate({
@@ -30,7 +30,7 @@ export default function ToolcallProgressUpdate({
   if (!progress) return null
   return (
     <div className="flex items-center gap-2 bg-purple-200 dark:bg-purple-500 rounded-full p-2">
-      <Spinner size={4} />
+      <Spinner className="size-4" />
       {progress}
     </div>
   )

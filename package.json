@@ -9,8 +9,12 @@
     "dev:react": "cd react && npm run dev",
     "dev:electron": "cross-env NODE_ENV=development npx electron electron/main.js",
     "dev": "concurrently \"npm run dev:react\" \"npm run dev:electron\"",
+    "dev:server-node": "cd server-node && npm run dev",
     "start:frontend": "cd frontend && npm run dev",
     "start:electron": "npx electron electron/main.js",
+    "build": "npm run build:react && npm run build:server-node && npm run build:electron",
+    "build:react": "cd react && npm run build",
+    "build:server-node": "cd server-node && npm run build",
     "build:electron": "electron-builder",
     "build:win": "electron-builder --win",
     "build:mac": "electron-builder --mac",
@@ -40,8 +44,16 @@
     ],
     "extraResources": [
       {
-        "from": "server/dist/",
-        "to": "server/dist/"
+        "from": "server-node/dist/",
+        "to": "server-node/dist/"
+      },
+      {
+        "from": "server-node/node_modules/",
+        "to": "server-node/node_modules/"
+      },
+      {
+        "from": "server-node/package.json",
+        "to": "server-node/package.json"
       },
       {
         "from": "react/dist/",

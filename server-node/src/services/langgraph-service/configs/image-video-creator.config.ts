@@ -5,7 +5,7 @@
  */
 
 import { BaseAgentConfig } from './base.config';
-import { ToolInfoJson } from '../../models';
+import { ToolInfoJson } from '../../../models';
 
 const SYSTEM_PROMPT = `
 你是一个图像视频创建者。你可以从文本提示或图像创建图像或视频。

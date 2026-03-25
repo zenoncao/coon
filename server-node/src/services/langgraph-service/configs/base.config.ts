@@ -4,7 +4,7 @@
  * 此模块定义智能体配置的基础结构和工具
  */
 
-import { ToolInfoJson } from '../../models';
+import { ToolInfoJson } from '../../../models';
 
 /**
  * 切换智能体配置
